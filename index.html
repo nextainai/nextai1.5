@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+    <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -11,30 +11,6 @@
     <!-- Top Bar -->
     <div class="top-bar">
         <span>NEXT-1</span>
-        <div>
-            <button id="history-btn"><i class="fas fa-history"></i> History</button>
-            <button id="login-btn">Login/Signup</button>
-        </div>
-    </div>
-
-    <!-- Chat History Sidebar -->
-    <div class="history-sidebar" id="history-sidebar">
-        <h3>Chat History</h3>
-        <div id="history-content"></div>
-    </div>
-
-    <!-- Login/Signup Modal -->
-    <div class="modal" id="login-modal">
-        <div class="modal-content">
-            <span class="close-modal" id="close-modal">×</span>
-            <h2 id="modal-title">Login</h2>
-            <form id="auth-form">
-                <input type="text" id="username" placeholder="Username" required>
-                <input type="password" id="password" placeholder="Password" required>
-                <button type="submit" id="auth-submit">Login</button>
-            </form>
-            <p id="toggle-auth">Don't have an account? <a href="#" id="signup-link">Sign up</a></p>
-        </div>
     </div>
 
     <!-- Chat Area -->
@@ -54,24 +30,9 @@
         const chatContent = document.getElementById("chat-content");
         const chatForm = document.getElementById("chat-form");
         const userInput = document.getElementById("user-input");
-        const loginBtn = document.getElementById("login-btn");
-        const loginModal = document.getElementById("login-modal");
-        const closeModal = document.getElementById("close-modal");
-        const authForm = document.getElementById("auth-form");
-        const authSubmit = document.getElementById("auth-submit");
-        const toggleAuth = document.getElementById("signup-link");
-        const modalTitle = document.getElementById("modal-title");
-        const toggleAuthText = document.getElementById("toggle-auth");
-        const historyBtn = document.getElementById("history-btn");
-        const historySidebar = document.getElementById("history-sidebar");
-        const historyContent = document.getElementById("history-content");
 
         const chatGPTLogo = "https://i.ibb.co/Z6dDQpwx/ncizgz.jpg";
         const userLogo = "https://i.ibb.co/ssQNvBC/67373290.jpg";
-
-        let isLoggedIn = false;
-        let isSignup = false;
-        let chatHistory = JSON.parse(localStorage.getItem("chatHistory")) || [];
 
         // Function to parse markdown
         function parseMarkdown(text) {
@@ -165,37 +126,6 @@
             return messageWrapper;
         }
 
-        // Save to chat history
-        function saveToHistory(message, fromUser) {
-            const timestamp = new Date().toISOString();
-            chatHistory.push({ message, fromUser, timestamp });
-            localStorage.setItem("chatHistory", JSON.stringify(chatHistory));
-            if (isLoggedIn) {
-                // Simulate server storage
-                console.log("Saving to server:", { message, fromUser, timestamp });
-            }
-            updateHistoryUI();
-        }
-
-        // Update history UI
-        function updateHistoryUI() {
-            historyContent.innerHTML = "";
-            chatHistory.forEach((item, index) => {
-                const historyItem = document.createElement("div");
-                historyItem.classList.add("history-item");
-                historyItem.innerHTML = `
-                    <strong>${item.fromUser ? "You" : "Bot"}:</strong> 
-                    ${item.message.substring(0, 50)}${item.message.length > 50 ? "..." : ""}
-                    <br><small>${new Date(item.timestamp).toLocaleString()}</small>
-                `;
-                historyItem.addEventListener("click", () => {
-                    chatContent.appendChild(createMessageElement(item.message, item.fromUser));
-                    chatContent.scrollTop = chatContent.scrollHeight;
-                });
-                historyContent.appendChild(historyItem);
-            });
-        }
-
         // Fetch response from API
         async function fetchResponse(userMessage) {
             try {
@@ -222,7 +152,6 @@
             if (!userMessage) return;
 
             chatContent.appendChild(createMessageElement(userMessage, true));
-            saveToHistory(userMessage, true);
             userInput.value = "";
 
             const loadingMessage = createMessageElement("", false, true);
@@ -232,52 +161,7 @@
             const botResponse = await fetchResponse(userMessage);
             chatContent.removeChild(loadingMessage);
             chatContent.appendChild(createMessageElement(botResponse, false));
-            saveToHistory(botResponse, false);
             chatContent.scrollTop = chatContent.scrollHeight;
-        });
-
-        // Login/Signup modal
-        loginBtn.addEventListener("click", () => {
-            loginModal.style.display = "flex";
-        });
-
-        closeModal.addEventListener("click", () => {
-            loginModal.style.display = "none";
-        });
-
-        toggleAuth.addEventListener("click", (e) => {
-            e.preventDefault();
-            isSignup = !isSignup;
-            modalTitle.textContent = isSignup ? "Sign Up" : "Login";
-            authSubmit.textContent = isSignup ? "Sign Up" : "Login";
-            toggleAuthText.innerHTML = isSignup
-                ? `Already have an account? <a href="#" id="signup-link">Login</a>`
-                : `Don't have an account? <a href="#" id="signup-link">Sign up</a>`;
-        });
-
-        authForm.addEventListener("submit", (e) => {
-            e.preventDefault();
-            const username = document.getElementById("username").value;
-            const password = document.getElementById("password").value;
-
-            // Mock authentication
-            if (username && password) {
-                isLoggedIn = true;
-                loginBtn.textContent = "Logout";
-                loginModal.style.display = "none";
-                alert(isSignup ? "Signed up successfully!" : "Logged in successfully!");
-                if (isSignup) {
-                    // Simulate creating user account
-                    console.log("New user:", { username, password });
-                }
-            } else {
-                alert("Please fill in all fields.");
-            }
-        });
-
-        // History sidebar toggle
-        historyBtn.addEventListener("click", () => {
-            historySidebar.classList.toggle("open");
         });
 
         // Initial setup
@@ -285,19 +169,8 @@
             setTimeout(() => {
                 const welcomeMessage = createMessageElement("How can I help you today?", false);
                 chatContent.appendChild(welcomeMessage);
-                saveToHistory("How can I help you today?", false);
                 chatContent.scrollTop = chatContent.scrollHeight;
             }, 100);
-            updateHistoryUI();
-        });
-
-        // Logout functionality
-        loginBtn.addEventListener("click", () => {
-            if (isLoggedIn) {
-                isLoggedIn = false;
-                loginBtn.textContent = "Login/Signup";
-                alert("Logged out successfully!");
-            }
         });
     </script>
 </body>
