@@ -2,267 +2,82 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEXT AI Chat</title>
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <title>NEXT AI</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
-    <link id="theme-stylesheet" rel="stylesheet" href="./styles.css">
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <!-- Top Bar -->
-    <div class="top-bar">
-        <span id="app-title">NEXT AI</span>
-        <select id="model-select">
-            <option value="next-1.5">NEXT-1.5</option>
-            <option value="next-1">NEXT-1</option>
-        </select>
-    </div>
-
-    <!-- Chat Area -->
+    <canvas id="particles"></canvas>
+    <div class="top-bar">NEXT-1</div>
     <div class="chat-container">
-        <div id="chat-content" class="chat-content">
-            <!-- Messages will appear here -->
-        </div>
+        <div id="chat-content" class="chat-content"></div>
     </div>
-
-    <!-- Bottom Bar -->
     <form id="chat-form" class="bottom-bar">
         <input id="user-input" type="text" placeholder="Type your message..." autocomplete="off">
-        <button type="submit"><i class="fas fa-paper-plane"></i></button>
+        <button type="submit">Send</button>
     </form>
 
     <script>
+        // Particle Background
+        const canvas = document.getElementById('particles');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const particles = [];
+        const particleCount = 50;
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 2 + 1;
+                this.speedX = Math.random() * 0.5 - 0.25;
+                this.speedY = Math.random() * 0.5 - 0.25;
+            }
+
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+                if (this.x < 0 || this.x > canvas.width) this.speedX *= -1;
+                if (this.y < 0 || this.y > canvas.height) this.speedY *= -1;
+            }
+
+            draw() {
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function initParticles() {
+            for (let i = 0; i < particleCount; i++) {
+                particles.push(new Particle());
+            }
+        }
+
+        function animateParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(particle => {
+                particle.update();
+                particle.draw();
+            });
+            requestAnimationFrame(animateParticles);
+        }
+
+        initParticles();
+        animateParticles();
+
+        // Chat Functionality
         const chatContent = document.getElementById("chat-content");
         const chatForm = document.getElementById("chat-form");
         const userInput = document.getElementById("user-input");
-        const modelSelect = document.getElementById("model-select");
-        const appTitle = document.getElementById("app-title");
-        const themeStylesheet = document.getElementById("theme-stylesheet");
 
-        const botLogo = "https://i.ibb.co/Z6dDQpwx/ncizgz.jpg";
+        const chatGPTLogo = "https://i.ibb.co/Z6dDQpwx/ncizgz.jpg";
         const userLogo = "https://i.ibb.co/ssQNvBC/67373290.jpg";
 
-        // NEXT-1 CSS (extracted from NEXT-1 HTML)
-        const next1Styles = `
-            body {
-                margin: 0;
-                font-family: Arial, sans-serif;
-                background-color: #fff;
-                color: #000;
-                display: flex;
-                flex-direction: column;
-                height: 100vh;
-            }
-            .code-block {
-                position: relative;
-                background-color: #f4f4f4;
-                padding: 10px;
-                border-radius: 5px;
-                margin: 5px 0;
-                overflow: auto;
-                font-family: monospace;
-                white-space: pre-wrap;
-                word-wrap: break-word;
-            }
-            .code-block .keyword { color: #d73a49; font-weight: bold; }
-            .code-block .variable { color: #6f42c1; }
-            .code-block .string { color: #032f62; }
-            .code-block .number { color: #005cc5; }
-            .code-block .comment { color: #6a737d; font-style: italic; }
-            .code-block .operator { color: #e36209; }
-            .inline-code {
-                background-color: #f8f8f8;
-                padding: 2px 5px;
-                border-radius: 3px;
-            }
-            .copy-button, .copy-button-inline {
-                background-color: transparent;
-                color: #007bff;
-                border: none;
-                border-radius: 5px;
-                padding: 0;
-                cursor: pointer;
-                margin-left: 10px;
-                font-size: 18px;
-            }
-            .copy-button:hover, .copy-button-inline:hover {
-                color: #0056b3;
-            }
-            .top-bar {
-                background-color: #fff;
-                padding: 15px 20px;
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                font-size: 1.5em;
-                font-weight: bold;
-                color: #000;
-                border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-                box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.1);
-                position: fixed;
-                top: 0;
-                width: 100%;
-                z-index: 1000;
-            }
-            .top-bar select {
-                padding: 5px;
-                font-size: 1em;
-                border-radius: 5px;
-                background-color: #f9f9f9;
-                color: #000;
-                border: 1px solid #ccc;
-                cursor: pointer;
-            }
-            .chat-container {
-                flex: 1;
-                display: flex;
-                flex-direction: column;
-                justify-content: flex-start;
-                margin-top: 60px;
-                margin-bottom: 60px;
-                overflow: hidden;
-            }
-            .chat-content {
-                flex: 1;
-                overflow-y: auto;
-                padding: 20px;
-                scroll-behavior: smooth;
-            }
-            .chat-content::-webkit-scrollbar {
-                width: 6px;
-            }
-            .chat-content::-webkit-scrollbar-thumb {
-                background-color: rgba(0, 0, 0, 0.2);
-                border-radius: 10px;
-            }
-            .message {
-                margin: 10px 0;
-                display: flex;
-                align-items: flex-end;
-                max-width: 80%;
-            }
-            .message.user {
-                justify-content: flex-end;
-                align-self: flex-end;
-                margin-left: auto;
-            }
-            .message.bot {
-                justify-content: flex-start;
-                align-self: flex-start;
-                margin-right: auto;
-            }
-            .bubble {
-                padding: 10px 15px;
-                border-radius: 20px;
-                word-wrap: break-word;
-                background-color: #f0f0f0;
-                color: #000;
-                box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.1);
-                max-width: calc(100% - 50px);
-            }
-            .message.user .bubble {
-                background-color: #007BFF;
-                color: #fff;
-            }
-            .avatar {
-                width: 40px;
-                height: 40px;
-                border-radius: 50%;
-                margin: 0 10px;
-            }
-            .message.user .avatar {
-                margin-left: 10px;
-            }
-            .message.bot .avatar {
-                margin-right: 10px;
-            }
-            .loading {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                padding: 10px 15px;
-                background-color: #f0f0f0;
-                border-radius: 20px;
-                max-width: 40%;
-                color: #000;
-                box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.1);
-            }
-            .dots {
-                display: flex;
-                align-items: center;
-                gap: 5px;
-            }
-            .dot {
-                width: 8px;
-                height: 8px;
-                background-color: #000;
-                border-radius: 50%;
-                animation: blink 1.4s infinite;
-            }
-            .dot:nth-child(2) {
-                animation-delay: 0.2s;
-            }
-            .dot:nth-child(3) {
-                animation-delay: 0.4s;
-            }
-            @keyframes blink {
-                0%, 80%, 100% { opacity: 0; }
-                40% { opacity: 1; }
-            }
-            .bottom-bar {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                background-color: #fff;
-                padding: 10px;
-                border-top: 1px solid rgba(0, 0, 0, 0.1);
-                box-shadow: 0px -2px 2px rgba(0, 0, 0, 0.1);
-                position: fixed;
-                bottom: 0;
-                left: 0;
-                right: 0;
-            }
-            .bottom-bar input {
-                flex: 1;
-                padding: 10px 15px;
-                border: 1px solid rgba(0, 0, 0, 0.2);
-                border-radius: 20px;
-                font-size: 1em;
-                background-color: #f9f9f9;
-                color: #000;
-                margin-right: 10px;
-                outline: none;
-            }
-            .bottom-bar input::placeholder {
-                color: #aaa;
-            }
-            .bottom-bar button {
-                padding: 10px 20px;
-                border: none;
-                border-radius: 20px;
-                font-size: 1em;
-                background-color: #007BFF;
-                color: #fff;
-                cursor: pointer;
-                transition: background-color 0.3s;
-            }
-            .bottom-bar button:hover {
-                background-color: #0056b3;
-            }
-            .bottom-bar button:active {
-                background-color: #004494;
-            }
-            pre {
-                background-color: #f5f5f5;
-                padding: 10px;
-                border-radius: 8px;
-                font-size: 1em;
-                white-space: pre-wrap;
-                word-wrap: break-word;
-                max-width: 100%;
-            }
-        `;
-
-        // Parse markdown
         function parseMarkdown(text) {
             text = text.replace(/```([\s\S]*?)```/g, (match, code) => {
                 const codeWithoutLanguage = code.split('\n').slice(1).join('\n');
@@ -275,160 +90,152 @@
                     </pre>`;
             });
 
-            text = text.replace(/`([^`]+)`/g, `<code class="inline-code">${escapeHtml('$1')}</code>`);
+            text = text.replace(/`([^`]+)`/g, (match, code) => {
+                return `<code class="inline-code">${escapeHtml(code)}</code>
+                        <button class="copy-button-inline" data-code="${encodeURIComponent(code)}">
+                            <i class="fa fa-copy"></i>
+                        </button>`;
+            });
+
             text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
             text = text.replace(/\*([^*]+)\*/g, '<em>$1</em>');
-            text = text.replace(/\n/g, '<br>');
+            text = text.replace(/\n/g, '<br/>');
 
             return text;
         }
 
-        // Escape HTML
         function escapeHtml(text) {
-            return text.replace(/&/g, "&").replace(/</g, "<").replace(/>/g, ">").replace(/"/g, """).replace(/'/g, "'");
+            return text
+                .replace(/&/g, "&")
+                .replace(/</g, "<")
+                .replace(/>/g, ">")
+                .replace(/"/g, """)
+                .replace(/'/g, "'");
         }
 
-        // Copy to clipboard
         function copyToClipboard(text, button) {
-            navigator.clipboard.writeText(text).then(() => {
-                const icon = button.querySelector('i');
-                icon.classList.remove('fa-copy');
-                icon.classList.add('fa-check');
-                setTimeout(() => {
-                    icon.classList.remove('fa-check');
-                    icon.classList.add('fa-copy');
-                }, 1000);
-            }).catch(() => {
-                // Fallback for GitHub Pages or non-secure contexts
-                const textarea = document.createElement('textarea');
-                textarea.value = text;
-                document.body.appendChild(textarea);
-                textarea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textarea);
-                const icon = button.querySelector('i');
-                icon.classList.remove('fa-copy');
-                icon.classList.add('fa-check');
-                setTimeout(() => {
-                    icon.classList.remove('fa-check');
-                    icon.classList.add('fa-copy');
-                }, 1000);
-            });
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+
+            const icon = button.querySelector('i');
+            icon.classList.remove('fa-copy');
+            icon.classList.add('fa-check');
+            
+            setTimeout(() => {
+                icon.classList.remove('fa-check');
+                icon.classList.add('fa-copy');
+            }, 1000);
         }
 
         document.addEventListener("click", (event) => {
-            const button = event.target.closest('.copy-button');
+            const button = event.target.closest('.copy-button, .copy-button-inline');
             if (button) {
                 const code = decodeURIComponent(button.getAttribute('data-code'));
                 copyToClipboard(code, button);
             }
         });
 
-        // Create message element
-        function createMessageElement(message, isUser, isLoading = false) {
-            const messageDiv = document.createElement("div");
-            messageDiv.classList.add("message", isUser ? "user" : "bot");
+        function createMessageElement(message, fromUser, isTyping = false) {
+            const messageWrapper = document.createElement("div");
+            messageWrapper.classList.add("message", fromUser ? "user" : "bot");
 
             const avatar = document.createElement("img");
-            avatar.src = isUser ? userLogo : botLogo;
-            avatar.alt = isUser ? "User" : "Bot";
+            avatar.src = fromUser ? userLogo : chatGPTLogo;
+            avatar.alt = fromUser ? "User" : "ChatGPT";
             avatar.classList.add("avatar");
 
             const bubble = document.createElement("div");
-            if (isLoading) {
-                bubble.classList.add("loading");
-                bubble.innerHTML = `
-                    <div class="dots">
-                        <div class="dot"></div>
-                        <div class="dot"></div>
-                        <div class="dot"></div>
-                    </div>`;
+            if (isTyping) {
+                bubble.classList.add("typing");
+                bubble.innerHTML = `<div class="dots">
+                                    <div class="dot"></div>
+                                    <div class="dot"></div>
+                                    <div class="dot"></div>
+                                </div>`;
             } else {
                 bubble.classList.add("bubble");
                 bubble.innerHTML = parseMarkdown(message);
             }
 
-            messageDiv.appendChild(isUser ? bubble : avatar);
-            messageDiv.appendChild(isUser ? avatar : bubble);
+            messageWrapper.appendChild(fromUser ? bubble : avatar);
+            messageWrapper.appendChild(fromUser ? avatar : bubble);
 
-            return messageDiv;
+            return messageWrapper;
         }
 
-        // Fetch bot response
         async function fetchResponse(userMessage) {
+            // Check for weather-related query
+            const weatherKeywords = ["weather", "temperature", "forecast"];
+            const isWeatherQuery = userMessage.toLowerCase().includes("what is the weather today") ||
+                                 weatherKeywords.some(keyword => userMessage.toLowerCase().includes(keyword));
+
+            if (isWeatherQuery) {
+                return "I am unable to provide real-time weather updates. You may want to check a weather website or app for the current weather conditions in your area.";
+            }
+
             try {
                 const response = await fetch("https://backend.buildpicoapps.com/aero/run/llm-api?pk=v1-Z0FBQUFBQm5IZkJDMlNyYUVUTjIyZVN3UWFNX3BFTU85SWpCM2NUMUk3T2dxejhLSzBhNWNMMXNzZlp3c09BSTR6YW1Sc1BmdGNTVk1GY0liT1RoWDZZX1lNZlZ0Z1dqd3c9PQ==", {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
                     body: JSON.stringify({ prompt: userMessage })
                 });
 
-                if (!response.ok) throw new Error("Network error");
+                if (!response.ok) {
+                    throw new Error('Failed to fetch response');
+                }
+
                 const data = await response.json();
-                return data.status === "success" ? data.text : "Error in response";
+
+                if (data.status === "success") {
+                    return data.text;
+                } else {
+                    throw new Error('Error in response data');
+                }
             } catch (error) {
                 console.error("Error:", error);
-                return "Sorry, something went wrong. The API may be unreachable from this host. Try again later.";
+                return "There was an error. Please try again later.";
             }
         }
 
-        // Handle form submission
         chatForm.addEventListener("submit", async (event) => {
             event.preventDefault();
+
             const userMessage = userInput.value.trim();
-            if (!userMessage) return;
+            if (!userMessage) {
+                return;
+            }
 
             chatContent.appendChild(createMessageElement(userMessage, true));
             userInput.value = "";
-            chatContent.scrollTop = chatContent.scrollHeight;
 
-            const loadingMessage = createMessageElement("", false, true);
-            chatContent.appendChild(loadingMessage);
+            const typingMessage = createMessageElement("", false, true);
+            chatContent.appendChild(typingMessage);
             chatContent.scrollTop = chatContent.scrollHeight;
 
             const botResponse = await fetchResponse(userMessage);
-            chatContent.removeChild(loadingMessage);
+
+            chatContent.removeChild(typingMessage);
             chatContent.appendChild(createMessageElement(botResponse, false));
             chatContent.scrollTop = chatContent.scrollHeight;
         });
 
-        // Switch model and styles
-        function switchModel(model) {
-            localStorage.setItem("selectedModel", model);
-            if (model === "next-1") {
-                themeStylesheet.disabled = true;
-                let styleElement = document.getElementById("next1-styles");
-                if (!styleElement) {
-                    styleElement = document.createElement("style");
-                    styleElement.id = "next1-styles";
-                    document.head.appendChild(styleElement);
-                }
-                styleElement.textContent = next1Styles;
-                appTitle.textContent = "NEXT-1";
-            } else {
-                themeStylesheet.disabled = false;
-                const styleElement = document.getElementById("next1-styles");
-                if (styleElement) styleElement.remove();
-                appTitle.textContent = "NEXT AI";
-            }
-        }
-
-        // Handle model selection
-        modelSelect.addEventListener("change", (event) => {
-            switchModel(event.target.value);
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const welcomeMessage = createMessageElement("How can I help you today?", false);
+                chatContent.appendChild(welcomeMessage);
+                chatContent.scrollTop = chatContent.scrollHeight;
+            }, 100);
         });
 
-        // Initialize model
-        const savedModel = localStorage.getItem("selectedModel") || "next-1.5";
-        modelSelect.value = savedModel;
-        switchModel(savedModel);
-
-        // Initial welcome message
-        window.addEventListener("load", () => {
-            setTimeout(() => {
-                chatContent.appendChild(createMessageElement("Hello! How can I assist you today?", false));
-                chatContent.scrollTop = chatContent.scrollHeight;
-            }, 500);
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
         });
     </script>
 </body>
