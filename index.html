@@ -98,15 +98,17 @@
         }
 
         .bubble {
-            padding: 15px 20px; /* Increased padding for a fuller feel */
+            padding: 15px 20px;
             border-radius: 20px;
             word-wrap: break-word;
             background: rgba(255, 255, 255, 0.1);
             color: #e0e0e0;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-            font-size: 1.1em; /* Slightly larger text for zoom effect */
-            line-height: 1.5; /* Improved readability */
-            animation: bubblePop 0.3s ease-out; /* Subtle pop animation */
+            font-size: 1.1em;
+            line-height: 1.5;
+            animation: bubblePop 0.3s ease-out;
+            position: relative;
+            margin-bottom: 10px; /* Added small space after each message */
         }
 
         @keyframes bubblePop {
@@ -343,15 +345,16 @@
             avatar.classList.add("avatar");
 
             const bubble = document.createElement("div");
+            bubble.classList.add("bubble");
             if (isLoading) {
-                bubble.classList.add("loading");
                 bubble.innerHTML = `<div class="dots">
                                         <div class="dot"></div>
                                         <div class="dot"></div>
                                         <div class="dot"></div>
                                     </div>`;
             } else {
-                bubble.textContent = message;
+                bubble.dataset.fullText = message; // Store full text for animation
+                bubble.textContent = ""; // Start empty for animation
             }
 
             messageWrapper.appendChild(fromUser ? bubble : avatar);
@@ -379,6 +382,21 @@
                 console.error("Error:", error);
                 return "There was an error. Please try again later.";
             }
+        }
+
+        function typeWriter(element, text, isThinkMode) {
+            let index = 0;
+            const speed = isThinkMode ? 100 : 50; // Slower for Think mode, faster for normal
+            element.textContent = ""; // Clear initial content
+            const interval = setInterval(() => {
+                if (index < text.length) {
+                    element.textContent += text.charAt(index);
+                    index++;
+                } else {
+                    clearInterval(interval);
+                    element.classList.add("blink-cursor"); // Add blinking cursor
+                }
+            }, speed);
         }
 
         let isSubmitting = false;
@@ -411,8 +429,9 @@
 
             chatContent.removeChild(loadingMessage);
             const messageElement = createMessageElement(botResponse, false);
-            messageElement.querySelector('.loading')?.classList.add('fade-out');
             chatContent.appendChild(messageElement);
+            const bubble = messageElement.querySelector(".bubble");
+            typeWriter(bubble, bubble.dataset.fullText, isThinkMode);
             autoScroll();
 
             isSubmitting = false;
@@ -420,7 +439,7 @@
 
         function autoScroll() {
             requestAnimationFrame(() => {
-                chatContent.scrollTop = chatContent.scrollHeight;
+                chatContent.scrollTop = chatContent.scrollHeight + 20; // Scroll a bit extra
             });
         }
 
@@ -428,6 +447,8 @@
             setTimeout(() => {
                 const welcomeMessage = createMessageElement("Hello! How can I help you today?", false);
                 chatContent.appendChild(welcomeMessage);
+                const bubble = welcomeMessage.querySelector(".bubble");
+                typeWriter(bubble, bubble.dataset.fullText, false);
                 autoScroll();
             }, 100);
         });
@@ -446,6 +467,19 @@
                 chatForm.dispatchEvent(new Event('submit'));
             });
         });
+
+        // Blinking cursor style
+        const style = document.createElement('style');
+        style.textContent = `
+            .blink-cursor::after {
+                content: '|';
+                animation: blink 0.7s step-end infinite;
+            }
+            @keyframes blink {
+                50% { opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
     </script>
 </body>
 </html>
