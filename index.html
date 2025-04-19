@@ -387,8 +387,15 @@
         function typeWriter(element, text, isThinkMode) {
             let index = 0;
             element.textContent = ""; // Clear initial content
-            const speed = isThinkMode ? 50 : 30; // Medium speed for Think mode (adjustable), faster for normal
-            const totalTime = 5500; // Target 5.5 seconds for medium speed
+            const length = text.length;
+            let speed;
+            if (isThinkMode) {
+                speed = 50; // Medium speed for Think mode
+            } else {
+                if (length <= 20) speed = 20; // 1-2 sec for short (up to 20 chars)
+                else if (length <= 50) speed = 50; // 2-3 sec for medium (20-50 chars)
+                else speed = 80; // 3-4 sec for long (over 50 chars)
+            }
             const interval = setInterval(() => {
                 if (index < text.length) {
                     element.textContent += text.charAt(index);
@@ -397,7 +404,7 @@
                     clearInterval(interval);
                     element.classList.add("blink-cursor");
                 }
-            }, Math.max(20, totalTime / text.length)); // Dynamic speed based on text length
+            }, speed);
         }
 
         function thinkAnimation(element) {
@@ -422,7 +429,9 @@
                 return;
             }
 
-            chatContent.appendChild(createMessageElement(userMessage, true));
+            // Ensure user's message is displayed immediately
+            const userMessageElement = createMessageElement(userMessage, true);
+            chatContent.appendChild(userMessageElement);
             userInput.value = "";
             autoScroll();
 
