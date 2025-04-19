@@ -108,7 +108,7 @@
             line-height: 1.5;
             animation: bubblePop 0.3s ease-out;
             position: relative;
-            margin-bottom: 10px; /* Added small space after each message */
+            margin-bottom: 10px;
         }
 
         @keyframes bubblePop {
@@ -353,7 +353,7 @@
                                         <div class="dot"></div>
                                     </div>`;
             } else {
-                bubble.dataset.fullText = message; // Store full text for animation
+                bubble.dataset.fullText = message;
                 bubble.textContent = ""; // Start empty for animation
             }
 
@@ -386,17 +386,28 @@
 
         function typeWriter(element, text, isThinkMode) {
             let index = 0;
-            const speed = isThinkMode ? 100 : 50; // Slower for Think mode, faster for normal
             element.textContent = ""; // Clear initial content
+            const speed = isThinkMode ? 50 : 30; // Medium speed for Think mode (adjustable), faster for normal
+            const totalTime = 5500; // Target 5.5 seconds for medium speed
             const interval = setInterval(() => {
                 if (index < text.length) {
                     element.textContent += text.charAt(index);
                     index++;
                 } else {
                     clearInterval(interval);
-                    element.classList.add("blink-cursor"); // Add blinking cursor
+                    element.classList.add("blink-cursor");
                 }
-            }, speed);
+            }, Math.max(20, totalTime / text.length)); // Dynamic speed based on text length
+        }
+
+        function thinkAnimation(element) {
+            let dots = "";
+            const interval = setInterval(() => {
+                dots = dots.length < 3 ? dots + "." : "";
+                element.textContent = "Thinking" + dots;
+                if (dots.length === 3) dots = "";
+            }, 500);
+            return interval;
         }
 
         let isSubmitting = false;
@@ -421,17 +432,26 @@
 
             let botResponse;
             if (isThinkMode) {
-                await new Promise(resolve => setTimeout(resolve, 3000));
+                const thinkBubble = createMessageElement("", false);
+                chatContent.appendChild(thinkBubble);
+                autoScroll();
+                const bubble = thinkBubble.querySelector(".bubble");
+                const thinkInterval = thinkAnimation(bubble);
+                await new Promise(resolve => setTimeout(resolve, 4000)); // 4-second thinking phase
+                clearInterval(thinkInterval);
                 botResponse = await fetchResponse(userMessage + " (processed with extra thought)");
+                chatContent.removeChild(thinkBubble);
+                const messageElement = createMessageElement(botResponse, false);
+                chatContent.appendChild(messageElement);
+                typeWriter(messageElement.querySelector(".bubble"), botResponse, true);
             } else {
                 botResponse = await fetchResponse(userMessage);
+                const messageElement = createMessageElement(botResponse, false);
+                chatContent.appendChild(messageElement);
+                typeWriter(messageElement.querySelector(".bubble"), botResponse, false);
             }
 
             chatContent.removeChild(loadingMessage);
-            const messageElement = createMessageElement(botResponse, false);
-            chatContent.appendChild(messageElement);
-            const bubble = messageElement.querySelector(".bubble");
-            typeWriter(bubble, bubble.dataset.fullText, isThinkMode);
             autoScroll();
 
             isSubmitting = false;
@@ -439,7 +459,7 @@
 
         function autoScroll() {
             requestAnimationFrame(() => {
-                chatContent.scrollTop = chatContent.scrollHeight + 20; // Scroll a bit extra
+                chatContent.scrollTop = chatContent.scrollHeight + 20;
             });
         }
 
